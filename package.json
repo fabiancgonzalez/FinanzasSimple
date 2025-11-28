@@ -1,0 +1,20 @@
+{
+  "name": "gestor-finanzas",
+  "version": "1.0.0",
+  "description": "Aplicación para gestionar ingresos y egresos de dinero",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "console": "node app.js",
+    "build": "echo Build completed - Ready for production",
+    "prod": "NODE_ENV=production node server.js"
+  },
+  "keywords": ["finanzas", "ingresos", "egresos", "gastos"],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.18.2",
+    "exceljs": "^4.3.0",
+    "readline-sync": "^1.4.10"
+  }
+}
