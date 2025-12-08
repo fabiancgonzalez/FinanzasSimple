@@ -1,0 +1,60 @@
+{
+  "users": [
+    {
+      "id": 1,
+      "username": "demo",
+      "password": "demo123",
+      "email": "demo@example.com",
+      "ingresos": [
+        {
+          "id": 1765154450112,
+          "descripcion": "salario",
+          "monto": 1000000,
+          "fecha": "7/12/2025, 21:40:50"
+        },
+        {
+          "id": 1765154799384,
+          "descripcion": "chamba",
+          "monto": 80000,
+          "fecha": "7/12/2025, 21:46:39"
+        }
+      ],
+      "egresos": [
+        {
+          "id": 1765154451591,
+          "descripcion": "gas",
+          "monto": 24000,
+          "fecha": "7/12/2025, 21:40:51"
+        },
+        {
+          "id": 1765154800207,
+          "descripcion": "luz",
+          "monto": 12000,
+          "fecha": "7/12/2025, 21:46:40"
+        }
+      ]
+    },
+    {
+      "id": 1765153066831,
+      "username": "fabian",
+      "email": "ceferinomonier@gmail.com",
+      "password": "Tm2ED6Vk",
+      "ingresos": [
+        {
+          "id": 1765153214528,
+          "descripcion": "salario",
+          "monto": 4000000,
+          "fecha": "7/12/2025, 21:20:14"
+        }
+      ],
+      "egresos": [
+        {
+          "id": 1765153215120,
+          "descripcion": "alquiler",
+          "monto": 200000,
+          "fecha": "7/12/2025, 21:20:15"
+        }
+      ]
+    }
+  ]
+}

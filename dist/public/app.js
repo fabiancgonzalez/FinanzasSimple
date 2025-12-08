@@ -65,7 +65,6 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btnExportar').addEventListener('click', exportarExcel);
     document.getElementById('btnGuardarDatos').addEventListener('click', guardarDatos);
     document.getElementById('btnCargarServidor').addEventListener('click', cargarDelServidor);
-    document.getElementById('changePasswordForm').addEventListener('submit', cambiarPassword);
     
     // Cargar datos desde JSON
     const cargarDatosInput = document.getElementById('cargarDatos');
@@ -513,24 +512,7 @@ async function eliminarEgreso(id) {
 // Abrir modal de cambiar contraseña
 function abrirModalCambiarPassword() {
     const modal = document.getElementById('changePasswordModal');
-    modal.classList.add('active');
-    
-    // Cerrar modal al hacer click en X
-    const closeBtn = modal.querySelector('.close');
-    closeBtn.onclick = () => {
-        modal.classList.remove('active');
-        document.getElementById('changePasswordForm').reset();
-        document.getElementById('changePasswordMessage').classList.remove('show', 'success', 'error');
-    };
-    
-    // Cerrar modal al hacer click fuera del modal
-    window.onclick = (event) => {
-        if (event.target === modal) {
-            modal.classList.remove('active');
-            document.getElementById('changePasswordForm').reset();
-            document.getElementById('changePasswordMessage').classList.remove('show', 'success', 'error');
-        }
-    };
+    modal.style.display = 'block';
 }
 
 // Cambiar contraseña
@@ -541,8 +523,6 @@ async function cambiarPassword(e) {
     const passwordNueva = document.getElementById('newPassword').value;
     const passwordConfirm = document.getElementById('confirmPassword').value;
     const messageEl = document.getElementById('changePasswordMessage');
-    
-    console.log('[CAMBIAR PASSWORD] Iniciando cambio de contraseña');
     
     if (passwordNueva !== passwordConfirm) {
         messageEl.textContent = 'Las nuevas contraseñas no coinciden';
@@ -560,13 +540,7 @@ async function cambiarPassword(e) {
     
     try {
         const headers = getAuthHeader();
-        if (!headers) {
-            console.log('[CAMBIAR PASSWORD] No auth headers');
-            return;
-        }
-        
-        console.log('[CAMBIAR PASSWORD] Headers to send:', headers);
-        console.log('[CAMBIAR PASSWORD] Endpoint:', `${API_BASE}/cambiar-password`);
+        if (!headers) return;
         
         const response = await fetch(`${API_BASE}/cambiar-password`, {
             method: 'POST',
@@ -578,10 +552,7 @@ async function cambiarPassword(e) {
             })
         });
         
-        console.log('[CAMBIAR PASSWORD] Response status:', response.status);
-        
         const data = await response.json();
-        console.log('[CAMBIAR PASSWORD] Response data:', data);
         
         if (response.ok) {
             messageEl.textContent = '✅ Contraseña cambiada exitosamente';
@@ -593,7 +564,7 @@ async function cambiarPassword(e) {
             
             // Cerrar modal después de 2 segundos
             setTimeout(() => {
-                document.getElementById('changePasswordModal').classList.remove('active');
+                document.getElementById('changePasswordModal').style.display = 'none';
                 messageEl.classList.remove('success', 'show');
             }, 2000);
         } else {
@@ -602,7 +573,7 @@ async function cambiarPassword(e) {
             messageEl.classList.add('error', 'show');
         }
     } catch (error) {
-        console.error('[CAMBIAR PASSWORD] Error:', error);
+        console.error('Error:', error);
         messageEl.textContent = 'Error al cambiar la contraseña';
         messageEl.classList.remove('success');
         messageEl.classList.add('error', 'show');

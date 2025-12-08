@@ -13,8 +13,8 @@ const BASE_URL = process.env.BASE_URL || '/finanzas';
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
-    user: process.env.EMAIL_USER || 'ceferinomonier@gmail.com', // Cambiar por tu email
-    pass: process.env.EMAIL_PASSWORD || 'vqojsugfiprdpmlu' // Usar contraseña de aplicación de Google
+    user: process.env.EMAIL_USER || 'tu-email@gmail.com', // Cambiar por tu email
+    pass: process.env.EMAIL_PASSWORD || 'tu-contraseña-app' // Usar contraseña de aplicación de Google
   }
 });
 
@@ -110,27 +110,16 @@ function findUserByUsername(username) {
 
 // Middleware de autenticación
 function requireAuth(req, res, next) {
-  const authHeader = req.headers.authorization;
-  console.log('[AUTH] Authorization header:', authHeader ? 'Present' : 'Missing');
-  
-  if (!authHeader) {
-    console.log('[AUTH] No authorization header found');
-    return res.status(401).json({ error: 'No autorizado' });
-  }
-  
-  const token = authHeader.split(' ')[1];
+  const token = req.headers.authorization?.split(' ')[1];
   if (!token) {
-    console.log('[AUTH] No token found after Bearer');
     return res.status(401).json({ error: 'No autorizado' });
   }
   
   try {
     const decoded = JSON.parse(Buffer.from(token, 'base64').toString('utf-8'));
-    console.log('[AUTH] Token decoded successfully:', decoded.username);
     req.user = decoded;
     next();
   } catch (error) {
-    console.log('[AUTH] Token decode error:', error.message);
     res.status(401).json({ error: 'Token inválido' });
   }
 }

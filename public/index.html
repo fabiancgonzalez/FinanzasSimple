@@ -5,16 +5,79 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestor de Finanzas Personales</title>
     <link rel="stylesheet" href="styles.css">
+    <script>
+        // Verificar autenticación ANTES de renderizar
+        (function() {
+            const token = localStorage.getItem('token');
+            const user = localStorage.getItem('user');
+            
+            // Si no hay token O usuario, redirigir a login
+            if (!token || !user) {
+                // Detectar correctamente la base URL
+                let baseUrl = '/finanzas';
+                const pathname = window.location.pathname;
+                
+                // Si el pathname contiene /finanzas, usar eso
+                if (pathname.includes('/finanzas')) {
+                    baseUrl = pathname.substring(0, pathname.indexOf('/finanzas') + '/finanzas'.length);
+                }
+                
+                console.log('[AUTH CHECK] No authentication found. Redirecting to login...');
+                console.log('[AUTH CHECK] pathname:', pathname);
+                console.log('[AUTH CHECK] baseUrl:', baseUrl);
+                
+                window.location.replace(baseUrl + '/login');
+                // Detener la ejecución
+                document.documentElement.style.display = 'none';
+            }
+        })();
+    </script>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>💰 Gestor de Finanzas Personales</h1>
+            <div class="header-content">
+                <h1>💰 Gestor de Finanzas Personales</h1>
+                <div class="user-section">
+                    <span id="userDisplay"></span>
+                    <button id="btnChangePassword" class="btn btn-info">🔐 Cambiar Contraseña</button>
+                    <button id="btnLogout" class="btn btn-logout">🚪 Salir</button>
+                </div>
+            </div>
         </header>
 
-        <!-- Botón Exportar -->
+        <!-- Botones de Exportar y Guardar Datos -->
         <div class="exportar-section">
             <button id="btnExportar" class="btn btn-exportar">📊 Exportar a Excel</button>
+            <button id="btnGuardarDatos" class="btn btn-guardar">💾 Guardar Datos</button>
+            <button id="btnCargarServidor" class="btn btn-cargar">☁️ Cargar del Servidor</button>
+        </div>
+
+        <!-- Grilla de Datos del Mes en Curso -->
+        <div class="card datos-mes-card" id="datosMesCard" style="display: none;">
+            <h2>📅 Datos del Mes Actual</h2>
+            <div class="tabla-container">
+                <table id="tablaDatosMes">
+                    <thead>
+                        <tr>
+                            <th>Tipo</th>
+                            <th>Descripción</th>
+                            <th>Monto</th>
+                            <th>Fecha</th>
+                        </tr>
+                    </thead>
+                    <tbody id="bodyDatosMes">
+                        <tr>
+                            <td colspan="4" class="empty">No hay datos para este mes</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="resumen-mes">
+                <span>Total Ingresos: <strong id="ingresosMes">$0.00</strong></span>
+                <span>Total Egresos: <strong id="egresosMes">$0.00</strong></span>
+                <span>Balance: <strong id="balanceMes">$0.00</strong></span>
+            </div>
         </div>
 
         <!-- Resumen Financiero -->
@@ -97,6 +160,31 @@
                     </table>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- Modal para cambiar contraseña -->
+    <div id="changePasswordModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>🔐 Cambiar Contraseña</h2>
+            <form id="changePasswordForm">
+                <div class="form-group">
+                    <label for="currentPassword">Contraseña Actual</label>
+                    <input type="password" id="currentPassword" placeholder="Tu contraseña actual" required>
+                </div>
+                <div class="form-group">
+                    <label for="newPassword">Nueva Contraseña</label>
+                    <input type="password" id="newPassword" placeholder="Nueva contraseña (mín. 8 caracteres)" required>
+                    <small>Debe contener mayúscula, minúscula y número</small>
+                </div>
+                <div class="form-group">
+                    <label for="confirmPassword">Confirmar Contraseña</label>
+                    <input type="password" id="confirmPassword" placeholder="Confirma tu nueva contraseña" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Cambiar Contraseña</button>
+                <div id="changePasswordMessage" class="message"></div>
+            </form>
         </div>
     </div>
 
