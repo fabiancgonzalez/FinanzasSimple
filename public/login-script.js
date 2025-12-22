@@ -41,6 +41,55 @@ window.switchTab = function(tab) {
     event.target.classList.add('active');
 };
 
+// FUNCIONES DEL MODAL
+window.openRecoverModal = function() {
+    console.log('[MODAL] Abriendo modal de recuperación');
+    const modal = document.getElementById('recoverModal');
+    const recoverForm = document.getElementById('recoverForm');
+    const changeForm = document.getElementById('changePasswordForm');
+    
+    modal.style.display = 'block';
+    
+    // Mostrar paso 1 y ocultar paso 2
+    recoverForm.style.display = 'block';
+    changeForm.style.display = 'none';
+    
+    document.getElementById('recoverTitle').textContent = 'Recuperar Contraseña';
+    
+    setTimeout(() => {
+        document.getElementById('recoverEmail').focus();
+    }, 100);
+    
+    console.log('[MODAL] Formulario de recuperación visible:', recoverForm.style.display);
+    console.log('[MODAL] Formulario de cambio visible:', changeForm.style.display);
+};
+
+window.closeRecoverModal = function() {
+    const modal = document.getElementById('recoverModal');
+    modal.style.display = 'none';
+    // Limpiar formularios y mensajes
+    document.getElementById('recoverForm').reset();
+    document.getElementById('changePasswordForm').reset();
+    document.getElementById('recoverForm').style.display = 'block';
+    document.getElementById('changePasswordForm').style.display = 'none';
+    
+    const recoverMessage = document.getElementById('recoverMessage');
+    recoverMessage.classList.remove('show', 'success', 'error');
+    recoverMessage.textContent = '';
+    
+    const changeMessage = document.getElementById('changePasswordMessage');
+    changeMessage.classList.remove('show', 'success', 'error');
+    changeMessage.textContent = '';
+};
+
+// Cerrar modal si se hace clic fuera de él
+window.onclick = function(event) {
+    const modal = document.getElementById('recoverModal');
+    if (event.target === modal) {
+        closeRecoverModal();
+    }
+};
+
 // Configuración global - Usar valores inyectados por el servidor o detectar dinámicamente
 let BASE_URL = window.BASE_URL;
 let API_BASE = window.API_BASE;
@@ -248,18 +297,53 @@ document.getElementById('recoverForm').addEventListener('submit', async (e) => {
         console.log('[RECOVER] Response data:', data);
 
         if (response.ok) {
-            messageEl.textContent = '✅ Se ha enviado una nueva contraseña a tu email. Usuario: ' + data.username;
+            messageEl.textContent = '✅ Se ha enviado una contraseña temporal a tu email. Espera 6 segundos...';
             messageEl.classList.add('success', 'show');
             messageEl.classList.remove('error');
 
-            // Limpiar formulario
-            document.getElementById('recoverForm').reset();
+            // Guardar username temporalmente
+            window.tempUsername = data.username;
 
-            // Cambiar a login después de 3 segundos
+            // Cambiar al formulario de cambio de contraseña después de 6 segundos
             setTimeout(() => {
-                window.switchTab('login');
-                document.getElementById('loginForm').reset();
-            }, 3000);
+                console.log('[MODAL] Cambiando a formulario de cambio de contraseña');
+                
+                // Ocultar mensaje del paso 1
+                messageEl.classList.remove('show');
+                messageEl.textContent = '';
+                
+                // Ocultar formulario de recuperación
+                const recoverForm = document.getElementById('recoverForm');
+                recoverForm.style.display = 'none';
+                console.log('[MODAL] Formulario recover oculto');
+                
+                // Mostrar formulario de cambio de contraseña
+                const changeForm = document.getElementById('changePasswordForm');
+                changeForm.style.display = 'block';
+                console.log('[MODAL] Formulario change display:', changeForm.style.display);
+                
+                // Cambiar título
+                const title = document.getElementById('recoverTitle');
+                title.textContent = 'Cambiar Contraseña';
+                console.log('[MODAL] Título cambiado a:', title.textContent);
+                
+                // Verificar que los campos existan y sean visibles
+                const tempPasswordField = document.getElementById('tempPassword');
+                const newPasswordField = document.getElementById('changeNewPassword');
+                const confirmPasswordField = document.getElementById('confirmNewPassword');
+                
+                console.log('[MODAL] Campo tempPassword existe:', !!tempPasswordField);
+                console.log('[MODAL] Campo changeNewPassword existe:', !!newPasswordField);
+                console.log('[MODAL] Campo confirmNewPassword existe:', !!confirmPasswordField);
+                
+                // Enfocar primer campo
+                setTimeout(() => {
+                    if (tempPasswordField) {
+                        tempPasswordField.focus();
+                        console.log('[MODAL] Focus en tempPassword');
+                    }
+                }, 100);
+            }, 6000);
         } else {
             messageEl.textContent = 'Error al recuperar contraseña';
             messageEl.classList.remove('success');
@@ -283,6 +367,89 @@ document.getElementById('recoverForm').addEventListener('submit', async (e) => {
         }
     } catch (error) {
         console.error('[RECOVER] Error:', error);
+        messageEl.textContent = 'Error de conexión: ' + error.message;
+        messageEl.classList.remove('success');
+        messageEl.classList.add('error', 'show');
+    }
+});
+
+// CAMBIAR CONTRASEÑA (desde modal de recuperación)
+document.getElementById('changePasswordForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const username = window.tempUsername; // Usuario guardado del paso anterior
+    const tempPassword = document.getElementById('tempPassword').value;
+    const newPassword = document.getElementById('changeNewPassword').value;
+    const confirmNewPassword = document.getElementById('confirmNewPassword').value;
+    const messageEl = document.getElementById('changePasswordMessage');
+
+    // Validar que las contraseñas coincidan
+    if (newPassword !== confirmNewPassword) {
+        messageEl.textContent = 'Las contraseñas no coinciden';
+        messageEl.classList.remove('success');
+        messageEl.classList.add('error', 'show');
+        return;
+    }
+
+    // Validar que la nueva contraseña sea segura
+    const validacion = validarContraseña(newPassword);
+    if (!validacion.esValida) {
+        messageEl.textContent = 'Contraseña débil: ' + validacion.errores.join(', ');
+        messageEl.classList.remove('success');
+        messageEl.classList.add('error', 'show');
+        return;
+    }
+
+    const changePasswordURL = `${API_BASE}/cambiar-password-recuperacion`;
+    console.log('[CHANGE PASSWORD] Intentando cambio en:', changePasswordURL);
+    console.log('[CHANGE PASSWORD] Username:', username);
+
+    try {
+        const response = await fetch(changePasswordURL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ 
+                username, 
+                oldPassword: tempPassword, 
+                newPassword 
+            })
+        });
+
+        console.log('[CHANGE PASSWORD] Response status:', response.status);
+        const data = await response.json();
+        console.log('[CHANGE PASSWORD] Response data:', data);
+
+        if (response.ok) {
+            messageEl.textContent = '✅ Contraseña cambiada exitosamente. Redirigiendo al login...';
+            messageEl.classList.add('success', 'show');
+            messageEl.classList.remove('error');
+
+            // Cerrar modal y volver al login después de 2 segundos
+            setTimeout(() => {
+                closeRecoverModal();
+                const loginMessage = document.getElementById('loginMessage');
+                loginMessage.textContent = 'Contraseña cambiada. Ahora puedes iniciar sesión con tu nueva contraseña.';
+                loginMessage.classList.add('success', 'show');
+                loginMessage.classList.remove('error');
+                
+                // Prellenar el campo de usuario
+                document.getElementById('loginUsername').value = username;
+                document.getElementById('loginPassword').focus();
+                
+                // Limpiar mensaje después de 8 segundos
+                setTimeout(() => {
+                    loginMessage.classList.remove('show');
+                }, 8000);
+            }, 2000);
+        } else {
+            messageEl.textContent = data.error || 'Error al cambiar contraseña. Verifica que la contraseña temporal sea correcta.';
+            messageEl.classList.remove('success');
+            messageEl.classList.add('error', 'show');
+        }
+    } catch (error) {
+        console.error('[CHANGE PASSWORD] Error:', error);
         messageEl.textContent = 'Error de conexión: ' + error.message;
         messageEl.classList.remove('success');
         messageEl.classList.add('error', 'show');

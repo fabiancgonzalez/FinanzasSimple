@@ -13,8 +13,8 @@ const BASE_URL = process.env.BASE_URL || '/finanzas';
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
-    user: process.env.EMAIL_USER || 'tu-email@gmail.com', // Cambiar por tu email
-    pass: process.env.EMAIL_PASSWORD || 'tu-contraseña-app' // Usar contraseña de aplicación de Google
+    user: process.env.EMAIL_USER || 'ceferinomonier@gmail.com', // Cambiar por tu email
+    pass: process.env.EMAIL_PASSWORD || 'vqojsugfiprdpmlu' // Usar contraseña de aplicación de Google
   }
 });
 
@@ -110,16 +110,27 @@ function findUserByUsername(username) {
 
 // Middleware de autenticación
 function requireAuth(req, res, next) {
-  const token = req.headers.authorization?.split(' ')[1];
+  const authHeader = req.headers.authorization;
+  console.log('[AUTH] Authorization header:', authHeader ? 'Present' : 'Missing');
+  
+  if (!authHeader) {
+    console.log('[AUTH] No authorization header found');
+    return res.status(401).json({ error: 'No autorizado' });
+  }
+  
+  const token = authHeader.split(' ')[1];
   if (!token) {
+    console.log('[AUTH] No token found after Bearer');
     return res.status(401).json({ error: 'No autorizado' });
   }
   
   try {
     const decoded = JSON.parse(Buffer.from(token, 'base64').toString('utf-8'));
+    console.log('[AUTH] Token decoded successfully:', decoded.username);
     req.user = decoded;
     next();
   } catch (error) {
+    console.log('[AUTH] Token decode error:', error.message);
     res.status(401).json({ error: 'Token inválido' });
   }
 }
@@ -277,7 +288,54 @@ app.post(BASE_URL + '/api/recuperar-password', async (req, res) => {
   }
 });
 
-// Cambiar contraseña
+// Cambiar contraseña después de recuperación (sin autenticación)
+app.post(BASE_URL + '/api/cambiar-password-recuperacion', (req, res) => {
+  const { username, oldPassword, newPassword } = req.body;
+  
+  if (!username || !oldPassword || !newPassword) {
+    return res.status(400).json({ error: 'Todos los campos son requeridos' });
+  }
+  
+  // Validar que la nueva contraseña sea segura
+  if (newPassword.length < 8) {
+    return res.status(400).json({ error: 'La nueva contraseña debe tener al menos 8 caracteres' });
+  }
+  
+  const tieneMayuscula = /[A-Z]/.test(newPassword);
+  const tieneMinuscula = /[a-z]/.test(newPassword);
+  const tieneNumero = /[0-9]/.test(newPassword);
+  
+  if (!tieneMayuscula || !tieneMinuscula || !tieneNumero) {
+    return res.status(400).json({ 
+      error: 'La nueva contraseña debe contener mayúscula, minúscula y número' 
+    });
+  }
+  
+  const data = readUsers();
+  const user = data.users.find(u => u.username === username);
+  
+  if (!user) {
+    return res.status(404).json({ error: 'Usuario no encontrado' });
+  }
+  
+  // Verificar que la contraseña temporal sea correcta
+  if (user.password !== oldPassword) {
+    return res.status(401).json({ error: 'La contraseña temporal es incorrecta' });
+  }
+  
+  // Cambiar a la nueva contraseña
+  user.password = newPassword;
+  saveUsers(data);
+  
+  console.log(`[CHANGE PASSWORD] Usuario ${username} cambió su contraseña exitosamente`);
+  
+  res.json({ 
+    message: '✅ Contraseña cambiada exitosamente. Ya puedes iniciar sesión con tu nueva contraseña.',
+    username: user.username
+  });
+});
+
+// Cambiar contraseña (requiere autenticación)
 app.post(BASE_URL + '/api/cambiar-password', requireAuth, (req, res) => {
   const { passwordActual, passwordNueva, passwordConfirm } = req.body;
   

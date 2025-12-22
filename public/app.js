@@ -61,11 +61,9 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('formIngreso').addEventListener('submit', manejarFormIngreso);
     document.getElementById('formEgreso').addEventListener('submit', manejarFormEgreso);
     document.getElementById('btnLogout').addEventListener('click', logout);
-    document.getElementById('btnChangePassword').addEventListener('click', abrirModalCambiarPassword);
     document.getElementById('btnExportar').addEventListener('click', exportarExcel);
     document.getElementById('btnGuardarDatos').addEventListener('click', guardarDatos);
     document.getElementById('btnCargarServidor').addEventListener('click', cargarDelServidor);
-    document.getElementById('changePasswordForm').addEventListener('submit', cambiarPassword);
     
     // Cargar datos desde JSON
     const cargarDatosInput = document.getElementById('cargarDatos');
@@ -73,22 +71,26 @@ document.addEventListener('DOMContentLoaded', () => {
         cargarDatosInput.addEventListener('change', manejarCargarDatos);
     }
     
-    // Configurar modal de cambiar contraseña
+    // Configurar modal de cambiar contraseña (solo si existe)
+    const changePasswordForm = document.getElementById('changePasswordForm');
+    if (changePasswordForm) {
+        changePasswordForm.addEventListener('submit', cambiarPassword);
+    }
+    
     const modal = document.getElementById('changePasswordModal');
     const closeBtn = document.querySelector('.close');
-    const changePasswordForm = document.getElementById('changePasswordForm');
     
-    closeBtn.onclick = () => {
-        modal.style.display = 'none';
-    };
-    
-    window.onclick = (event) => {
-        if (event.target == modal) {
+    if (closeBtn && modal) {
+        closeBtn.onclick = () => {
             modal.style.display = 'none';
-        }
-    };
-    
-    changePasswordForm.addEventListener('submit', cambiarPassword);
+        };
+        
+        window.onclick = (event) => {
+            if (event.target == modal) {
+                modal.style.display = 'none';
+            }
+        };
+    }
 });
 
 // Función logout
@@ -195,24 +197,47 @@ function extraerMesAnio(fechaStr) {
 // Función para cargar datos del servidor
 async function cargarDelServidor() {
     try {
+        console.log('[CARGAR] Iniciando carga desde servidor...');
         const headers = getAuthHeader();
-        if (!headers) return;
+        
+        if (!headers) {
+            console.error('[CARGAR] No hay headers de autenticación');
+            alert('Error: No estás autenticado. Inicia sesión nuevamente.');
+            window.location.href = `${APP_BASE}/login`;
+            return;
+        }
 
-        const response = await fetch(`${API_BASE}/obtener-datos-guardados`, {
-            headers
+        console.log('[CARGAR] Headers obtenidos:', headers);
+        const url = `${API_BASE}/obtener-datos-guardados`;
+        console.log('[CARGAR] URL:', url);
+
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: headers
         });
+
+        console.log('[CARGAR] Response status:', response.status);
 
         if (!response.ok) {
             if (response.status === 401) {
+                console.error('[CARGAR] No autorizado (401)');
+                alert('Sesión expirada. Por favor inicia sesión nuevamente.');
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
                 window.location.href = `${APP_BASE}/login`;
             } else {
-                alert('Error al cargar datos del servidor');
+                const errorData = await response.json().catch(() => ({ error: 'Error desconocido' }));
+                console.error('[CARGAR] Error del servidor:', errorData);
+                alert(`Error al cargar datos del servidor: ${errorData.error || 'Error desconocido'}`);
             }
             return;
         }
 
         const datos = await response.json();
+        console.log('[CARGAR] Datos recibidos:', datos);
+        
         const mesActual = getMesActual();
+        console.log('[CARGAR] Mes actual:', mesActual);
 
         // Filtrar datos del mes actual
         const ingresosMes = datos.ingresos.filter(ingreso => {
@@ -229,13 +254,16 @@ async function cargarDelServidor() {
                    String(fechaEgreso.anio) === String(mesActual.anio);
         });
 
+        console.log('[CARGAR] Ingresos del mes:', ingresosMes.length);
+        console.log('[CARGAR] Egresos del mes:', egresosMes.length);
+
         // Mostrar grilla
         mostrarDatosMes(ingresosMes, egresosMes);
         
-       // alert(`✅ Datos cargados del servidor!\nIngresos del mes: ${ingresosMes.length}\nEgresos del mes: ${egresosMes.length}`);
+        //alert(`✅ Datos cargados del servidor!\n\nTotal Ingresos: ${datos.ingresos.length}\nTotal Egresos: ${datos.egresos.length}\n\nDel mes actual:\nIngresos: ${ingresosMes.length}\nEgresos: ${egresosMes.length}`);
     } catch (error) {
-        console.error('Error:', error);
-        alert('Error al cargar los datos');
+        console.error('[CARGAR] Error:', error);
+        alert(`Error al cargar los datos: ${error.message}`);
     }
 }
 

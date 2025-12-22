@@ -40,7 +40,7 @@
                 <h1>💰 Gestor de Finanzas Personales</h1>
                 <div class="user-section">
                     <span id="userDisplay"></span>
-                    <button id="btnChangePassword" class="btn btn-info">🔐 Cambiar Contraseña</button>
+                   
                     <button id="btnLogout" class="btn btn-logout">🚪 Salir</button>
                 </div>
             </div>
@@ -163,30 +163,7 @@
         </div>
     </div>
 
-    <!-- Modal para cambiar contraseña -->
-    <div id="changePasswordModal" class="modal">
-        <div class="modal-content">
-            <span class="close">&times;</span>
-            <h2>🔐 Cambiar Contraseña</h2>
-            <form id="changePasswordForm">
-                <div class="form-group">
-                    <label for="currentPassword">Contraseña Actual</label>
-                    <input type="password" id="currentPassword" placeholder="Tu contraseña actual" required>
-                </div>
-                <div class="form-group">
-                    <label for="newPassword">Nueva Contraseña</label>
-                    <input type="password" id="newPassword" placeholder="Nueva contraseña (mín. 8 caracteres)" required>
-                    <small>Debe contener mayúscula, minúscula y número</small>
-                </div>
-                <div class="form-group">
-                    <label for="confirmPassword">Confirmar Contraseña</label>
-                    <input type="password" id="confirmPassword" placeholder="Confirma tu nueva contraseña" required>
-                </div>
-                <button type="submit" class="btn btn-primary">Cambiar Contraseña</button>
-                <div id="changePasswordMessage" class="message"></div>
-            </form>
-        </div>
-    </div>
+    
 
     <script src="app.js"></script>
 </body>

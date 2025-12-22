@@ -61,7 +61,6 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('formIngreso').addEventListener('submit', manejarFormIngreso);
     document.getElementById('formEgreso').addEventListener('submit', manejarFormEgreso);
     document.getElementById('btnLogout').addEventListener('click', logout);
-    document.getElementById('btnChangePassword').addEventListener('click', abrirModalCambiarPassword);
     document.getElementById('btnExportar').addEventListener('click', exportarExcel);
     document.getElementById('btnGuardarDatos').addEventListener('click', guardarDatos);
     document.getElementById('btnCargarServidor').addEventListener('click', cargarDelServidor);
@@ -72,22 +71,26 @@ document.addEventListener('DOMContentLoaded', () => {
         cargarDatosInput.addEventListener('change', manejarCargarDatos);
     }
     
-    // Configurar modal de cambiar contraseña
+    // Configurar modal de cambiar contraseña (solo si existe)
+    const changePasswordForm = document.getElementById('changePasswordForm');
+    if (changePasswordForm) {
+        changePasswordForm.addEventListener('submit', cambiarPassword);
+    }
+    
     const modal = document.getElementById('changePasswordModal');
     const closeBtn = document.querySelector('.close');
-    const changePasswordForm = document.getElementById('changePasswordForm');
     
-    closeBtn.onclick = () => {
-        modal.style.display = 'none';
-    };
-    
-    window.onclick = (event) => {
-        if (event.target == modal) {
+    if (closeBtn && modal) {
+        closeBtn.onclick = () => {
             modal.style.display = 'none';
-        }
-    };
-    
-    changePasswordForm.addEventListener('submit', cambiarPassword);
+        };
+        
+        window.onclick = (event) => {
+            if (event.target == modal) {
+                modal.style.display = 'none';
+            }
+        };
+    }
 });
 
 // Función logout
@@ -194,24 +197,47 @@ function extraerMesAnio(fechaStr) {
 // Función para cargar datos del servidor
 async function cargarDelServidor() {
     try {
+        console.log('[CARGAR] Iniciando carga desde servidor...');
         const headers = getAuthHeader();
-        if (!headers) return;
+        
+        if (!headers) {
+            console.error('[CARGAR] No hay headers de autenticación');
+            alert('Error: No estás autenticado. Inicia sesión nuevamente.');
+            window.location.href = `${APP_BASE}/login`;
+            return;
+        }
 
-        const response = await fetch(`${API_BASE}/obtener-datos-guardados`, {
-            headers
+        console.log('[CARGAR] Headers obtenidos:', headers);
+        const url = `${API_BASE}/obtener-datos-guardados`;
+        console.log('[CARGAR] URL:', url);
+
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: headers
         });
+
+        console.log('[CARGAR] Response status:', response.status);
 
         if (!response.ok) {
             if (response.status === 401) {
+                console.error('[CARGAR] No autorizado (401)');
+                alert('Sesión expirada. Por favor inicia sesión nuevamente.');
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
                 window.location.href = `${APP_BASE}/login`;
             } else {
-                alert('Error al cargar datos del servidor');
+                const errorData = await response.json().catch(() => ({ error: 'Error desconocido' }));
+                console.error('[CARGAR] Error del servidor:', errorData);
+                alert(`Error al cargar datos del servidor: ${errorData.error || 'Error desconocido'}`);
             }
             return;
         }
 
         const datos = await response.json();
+        console.log('[CARGAR] Datos recibidos:', datos);
+        
         const mesActual = getMesActual();
+        console.log('[CARGAR] Mes actual:', mesActual);
 
         // Filtrar datos del mes actual
         const ingresosMes = datos.ingresos.filter(ingreso => {
@@ -228,13 +254,16 @@ async function cargarDelServidor() {
                    String(fechaEgreso.anio) === String(mesActual.anio);
         });
 
+        console.log('[CARGAR] Ingresos del mes:', ingresosMes.length);
+        console.log('[CARGAR] Egresos del mes:', egresosMes.length);
+
         // Mostrar grilla
         mostrarDatosMes(ingresosMes, egresosMes);
         
-       // alert(`✅ Datos cargados del servidor!\nIngresos del mes: ${ingresosMes.length}\nEgresos del mes: ${egresosMes.length}`);
+        //alert(`✅ Datos cargados del servidor!\n\nTotal Ingresos: ${datos.ingresos.length}\nTotal Egresos: ${datos.egresos.length}\n\nDel mes actual:\nIngresos: ${ingresosMes.length}\nEgresos: ${egresosMes.length}`);
     } catch (error) {
-        console.error('Error:', error);
-        alert('Error al cargar los datos');
+        console.error('[CARGAR] Error:', error);
+        alert(`Error al cargar los datos: ${error.message}`);
     }
 }
 
@@ -512,7 +541,24 @@ async function eliminarEgreso(id) {
 // Abrir modal de cambiar contraseña
 function abrirModalCambiarPassword() {
     const modal = document.getElementById('changePasswordModal');
-    modal.style.display = 'block';
+    modal.classList.add('active');
+    
+    // Cerrar modal al hacer click en X
+    const closeBtn = modal.querySelector('.close');
+    closeBtn.onclick = () => {
+        modal.classList.remove('active');
+        document.getElementById('changePasswordForm').reset();
+        document.getElementById('changePasswordMessage').classList.remove('show', 'success', 'error');
+    };
+    
+    // Cerrar modal al hacer click fuera del modal
+    window.onclick = (event) => {
+        if (event.target === modal) {
+            modal.classList.remove('active');
+            document.getElementById('changePasswordForm').reset();
+            document.getElementById('changePasswordMessage').classList.remove('show', 'success', 'error');
+        }
+    };
 }
 
 // Cambiar contraseña
@@ -523,6 +569,8 @@ async function cambiarPassword(e) {
     const passwordNueva = document.getElementById('newPassword').value;
     const passwordConfirm = document.getElementById('confirmPassword').value;
     const messageEl = document.getElementById('changePasswordMessage');
+    
+    console.log('[CAMBIAR PASSWORD] Iniciando cambio de contraseña');
     
     if (passwordNueva !== passwordConfirm) {
         messageEl.textContent = 'Las nuevas contraseñas no coinciden';
@@ -540,7 +588,13 @@ async function cambiarPassword(e) {
     
     try {
         const headers = getAuthHeader();
-        if (!headers) return;
+        if (!headers) {
+            console.log('[CAMBIAR PASSWORD] No auth headers');
+            return;
+        }
+        
+        console.log('[CAMBIAR PASSWORD] Headers to send:', headers);
+        console.log('[CAMBIAR PASSWORD] Endpoint:', `${API_BASE}/cambiar-password`);
         
         const response = await fetch(`${API_BASE}/cambiar-password`, {
             method: 'POST',
@@ -552,7 +606,10 @@ async function cambiarPassword(e) {
             })
         });
         
+        console.log('[CAMBIAR PASSWORD] Response status:', response.status);
+        
         const data = await response.json();
+        console.log('[CAMBIAR PASSWORD] Response data:', data);
         
         if (response.ok) {
             messageEl.textContent = '✅ Contraseña cambiada exitosamente';
@@ -564,7 +621,7 @@ async function cambiarPassword(e) {
             
             // Cerrar modal después de 2 segundos
             setTimeout(() => {
-                document.getElementById('changePasswordModal').style.display = 'none';
+                document.getElementById('changePasswordModal').classList.remove('active');
                 messageEl.classList.remove('success', 'show');
             }, 2000);
         } else {
@@ -573,7 +630,7 @@ async function cambiarPassword(e) {
             messageEl.classList.add('error', 'show');
         }
     } catch (error) {
-        console.error('Error:', error);
+        console.error('[CAMBIAR PASSWORD] Error:', error);
         messageEl.textContent = 'Error al cambiar la contraseña';
         messageEl.classList.remove('success');
         messageEl.classList.add('error', 'show');

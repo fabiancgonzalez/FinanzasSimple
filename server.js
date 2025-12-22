@@ -288,7 +288,54 @@ app.post(BASE_URL + '/api/recuperar-password', async (req, res) => {
   }
 });
 
-// Cambiar contraseña
+// Cambiar contraseña después de recuperación (sin autenticación)
+app.post(BASE_URL + '/api/cambiar-password-recuperacion', (req, res) => {
+  const { username, oldPassword, newPassword } = req.body;
+  
+  if (!username || !oldPassword || !newPassword) {
+    return res.status(400).json({ error: 'Todos los campos son requeridos' });
+  }
+  
+  // Validar que la nueva contraseña sea segura
+  if (newPassword.length < 8) {
+    return res.status(400).json({ error: 'La nueva contraseña debe tener al menos 8 caracteres' });
+  }
+  
+  const tieneMayuscula = /[A-Z]/.test(newPassword);
+  const tieneMinuscula = /[a-z]/.test(newPassword);
+  const tieneNumero = /[0-9]/.test(newPassword);
+  
+  if (!tieneMayuscula || !tieneMinuscula || !tieneNumero) {
+    return res.status(400).json({ 
+      error: 'La nueva contraseña debe contener mayúscula, minúscula y número' 
+    });
+  }
+  
+  const data = readUsers();
+  const user = data.users.find(u => u.username === username);
+  
+  if (!user) {
+    return res.status(404).json({ error: 'Usuario no encontrado' });
+  }
+  
+  // Verificar que la contraseña temporal sea correcta
+  if (user.password !== oldPassword) {
+    return res.status(401).json({ error: 'La contraseña temporal es incorrecta' });
+  }
+  
+  // Cambiar a la nueva contraseña
+  user.password = newPassword;
+  saveUsers(data);
+  
+  console.log(`[CHANGE PASSWORD] Usuario ${username} cambió su contraseña exitosamente`);
+  
+  res.json({ 
+    message: '✅ Contraseña cambiada exitosamente. Ya puedes iniciar sesión con tu nueva contraseña.',
+    username: user.username
+  });
+});
+
+// Cambiar contraseña (requiere autenticación)
 app.post(BASE_URL + '/api/cambiar-password', requireAuth, (req, res) => {
   const { passwordActual, passwordNueva, passwordConfirm } = req.body;
   
