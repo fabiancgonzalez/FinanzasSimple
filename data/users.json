@@ -33,28 +33,7 @@
           "fecha": "7/12/2025, 21:46:40"
         }
       ]
-    },
-    {
-      "id": 1765153066831,
-      "username": "fabian",
-      "email": "ceferinomonier@gmail.com",
-      "password": "Tm2ED6Vk",
-      "ingresos": [
-        {
-          "id": 1765153214528,
-          "descripcion": "salario",
-          "monto": 4000000,
-          "fecha": "7/12/2025, 21:20:14"
-        }
-      ],
-      "egresos": [
-        {
-          "id": 1765153215120,
-          "descripcion": "alquiler",
-          "monto": 200000,
-          "fecha": "7/12/2025, 21:20:15"
-        }
-      ]
     }
+   
   ]
 }
