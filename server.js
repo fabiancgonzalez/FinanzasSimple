@@ -540,12 +540,41 @@ app.get(BASE_URL + '/api/exportar-excel', requireAuth, async (req, res) => {
     const mesActual = String(ahora.getMonth() + 1).padStart(2, '0');
     const anioActual = ahora.getFullYear();
     
-    const ingresosMes = user.ingresos.filter(item => item.fecha.startsWith(`${anioActual}-${mesActual}`));
-    const egresosMes = user.egresos.filter(item => item.fecha.startsWith(`${anioActual}-${mesActual}`));
-    
+    // Helper: verificar si una fecha (en varios formatos) corresponde al mes/año dados
+    function fechaCorrespondeMes(itemFecha, mes, anio) {
+      const str = String(itemFecha || '');
+
+      // Priorizar formatos 'DD/MM/YYYY' o 'DD/MM/YYYY, HH:MM:SS' (locales como 'es-ES')
+      const matchDMY = str.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+      if (matchDMY) {
+        const mesStr = String(matchDMY[2]).padStart(2, '0');
+        const anioStr = matchDMY[3];
+        return mesStr === mes && String(anioStr) === String(anio);
+      }
+
+      // Intentar parseo directo (ISO o formatos que Date entiende) como fallback
+      const d = new Date(str);
+      if (!isNaN(d)) {
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const y = d.getFullYear();
+        return m === mes && y === anio;
+      }
+
+      // Último recurso: verificar prefijo 'YYYY-MM'
+      return str.startsWith(`${anio}-${mes}`);
+    }
+
+    const ingresosMes = user.ingresos.filter(item => fechaCorrespondeMes(item.fecha, mesActual, anioActual));
+    const egresosMes = user.egresos.filter(item => fechaCorrespondeMes(item.fecha, mesActual, anioActual));
+
     const totalIngresosMes = ingresosMes.reduce((sum, item) => sum + item.monto, 0);
     const totalEgresosMes = egresosMes.reduce((sum, item) => sum + item.monto, 0);
     const balanceMes = totalIngresosMes - totalEgresosMes;
+
+    // Logs de depuración para exportar Excel
+    console.log('[EXPORT] Mes/Anio:', mesActual, anioActual);
+    console.log('[EXPORT] Ingresos del mes (count):', ingresosMes.length, ' Tot:', totalIngresosMes);
+    console.log('[EXPORT] Egresos del mes (count):', egresosMes.length, ' Tot:', totalEgresosMes);
     
     const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
     const nombreMes = meses[ahora.getMonth()];

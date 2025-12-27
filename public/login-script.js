@@ -348,9 +348,9 @@ document.getElementById('recoverForm').addEventListener('submit', async (e) => {
             messageEl.textContent = 'Error al recuperar contraseña';
             messageEl.classList.remove('success');
             messageEl.classList.add('error', 'show');
-            messageEl.textContent += ' Contactar Fabian +5493513721988 para soporte.';
+            messageEl.textContent += ' Contactar Fabian +5493513729188 para soporte.';
             clickwhatsapp = document.createElement('a');
-            clickwhatsapp.href = 'https://wa.me/5493513721988';
+            clickwhatsapp.href = 'https://wa.me/5493513729188';
             clickwhatsapp.target = '_blank';
             clickwhatsapp.textContent = ' FABIAN WhatsApp';
             clickwhatsapp.style.display = 'inline-flex';
